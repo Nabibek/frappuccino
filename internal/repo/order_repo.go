@@ -3,6 +3,7 @@ package repo
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"frappuccino/models"
 	"frappuccino/utils"
@@ -14,7 +15,7 @@ type OrderRepo interface {
 	Create(ctx context.Context, order models.Order) (models.Order, error)
 	Orders(ctx context.Context) ([]models.Order, error)
 	GetItemByID(ctx context.Context, orderId string) (models.Order, error)
-	UpdateItemByID(ctx context.Context, order models.Order) error
+	UpdateOrdeItemrByID(ctx context.Context, orderItems models.OrderItems) error
 	DeleteItemByID(ctx context.Context, orderId string) error
 	checkIngregients(tx *sql.Tx, orderItems []models.OrderItems) error
 	minusInventory(tx *sql.Tx, orderItems []models.OrderItems) error
@@ -31,7 +32,7 @@ func NewOrderRepository(db *sql.DB) OrderRepo {
 func (r *orderRepo) Create(ctx context.Context, order models.Order) (models.Order, error) {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
-		return 0, fmt.Errorf("failed to begin transaction: %w", err)
+		return models.Order{}, fmt.Errorf("failed to begin transaction: %w", err)
 	}
 	defer tx.Rollback()
 	// check inventory
@@ -46,9 +47,15 @@ func (r *orderRepo) Create(ctx context.Context, order models.Order) (models.Orde
 	if err != nil {
 		return models.Order{}, err
 	}
+
 	var totalPrice utils.DEC
 
 	for _, items := range order.OrderItems {
+		err = r.db.QueryRow(`SELECT mi.price FROM menu_items mi WHERE menu_item_id = $1`, items.MenuItemId).Scan(items.UnitPrice)
+		if err != nil {
+			return models.Order{}, err
+		}
+
 		totalPrice += items.Quantity * items.UnitPrice // add unit_price from menu Items
 	}
 	order.TotalPrice = totalPrice
@@ -71,8 +78,7 @@ func (r *orderRepo) checkIngregients(tx *sql.Tx, orderItems []models.OrderItems)
 		err := tx.QueryRow(query1, item.Quantity, item.MenuItemId).Scan(&have)
 
 		if err != nil || have == false {
-			return fmt.Errorf("Doesn't have inventory for menu item %d: %w",
-				item.MenuItemId, err)
+			return fmt.Errorf("Doesn't have inventory for menu item %d: %w", item.MenuItemId, err)
 		}
 	}
 
@@ -109,7 +115,7 @@ func (r *orderRepo) Orders(ctx context.Context) ([]models.Order, error) {
 	var orders []models.Order
 	for rows.Next() {
 		var order models.Order
-		err = rows.Scan(&order.OrderId, &order.CustomerId,pq.Array(&order.OrderItems), &order.SpecialInstructions, &order.TotalPrice, &order.OrderStatus, &order.PaymentMethod, &order.CreatedAt, &order.UpdatedAt)
+		err = rows.Scan(&order.OrderId, &order.CustomerId, pq.Array(&order.OrderItems), &order.SpecialInstructions, &order.TotalPrice, &order.OrderStatus, &order.PaymentMethod, &order.CreatedAt, &order.UpdatedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -118,30 +124,75 @@ func (r *orderRepo) Orders(ctx context.Context) ([]models.Order, error) {
 	return orders, nil
 }
 
-
-func (r *orderRepo)GetItemByID(ctx context.Context, orderId string) (models.Order, error){
-	r.db.QueryContext(ctx,`SELECT * FROM orders WHERE order_id = $1`,orderId)
+func (r *orderRepo) GetItemByID(ctx context.Context, orderId string) (models.Order, error) {
+	var order models.Order
+	err := r.db.QueryRowContext(ctx, `SELECT * FROM orders WHERE order_id = $1`, orderId).Scan(&order.OrderId, &order.CustomerId, pq.Array(&order.OrderItems), &order.SpecialInstructions, &order.TotalPrice, &order.OrderStatus, &order.PaymentMethod, &order.CreatedAt, &order.UpdatedAt)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return models.MenuItems{}, fmt.Errorf("Item not found: %w", err)
+			return models.Order{}, fmt.Errorf("Item not found: %w", err)
 		}
-		return models.MenuItems{}, fmt.Errorf("failed to get Item: %w", err)
+		return models.Order{}, fmt.Errorf("failed to get Item: %w", err)
 	}
-	return item, nil
+	return order, nil
 }
-func (r *orderRepo)UpdateItemByID(ctx context.Context, order models.Order) error{
-	tx, err :+ r.db.BeginTx(ctx,nil)
-	if err != nil{
+
+func (r *orderRepo) UpdateOrdeItemrByID(ctx context.Context, orderItems models.OrderItems) error {
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
-	res, err  := tx.ExecContext(ctx, `
+	res, err := tx.ExecContext(ctx, `
 	UPDATE order_item
-	SET order_item_id,
-	order_id,
-	menu_item_id,
-	customizations,
-	quantity,
-	`)
+	SET 
+	menu_item_id = $3,
+	customizations = $4,
+	quantity = $5,
+	WHERE order_id = $1 AND order_item_id= $2
+	`, orderItems.OrderId, orderItems.OrderItemId, orderItems.MenuItemId, orderItems.Customizations, orderItems.Quantity)
+	if err != nil {
+		return err
+	}
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to check rows affected: %w", err)
+	}
+	if rowsAffected == 0 {
+		return sql.ErrNoRows
+	}
+
+	// Commit transaction
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
 }
-DeleteItemByID(ctx context.Context, orderId string) error
+
+func (r *orderRepo) DeleteItemByID(ctx context.Context, orderId string) error {
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	res, err := tx.ExecContext(ctx, `DELETE FROM orders WHERE id = $1`, orderId)
+	if err != nil {
+		return fmt.Errorf("failed to delete Orders: %w", err)
+	}
+
+	// Verify exactly one row was deleted
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to check rows affected: %w", err)
+	}
+	if rowsAffected == 0 {
+		return sql.ErrNoRows
+	}
+
+	// Commit transaction if everything succeeded
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
+}
