@@ -14,9 +14,9 @@ import (
 type OrderRepo interface {
 	Create(ctx context.Context, order models.Order) (models.Order, error)
 	Orders(ctx context.Context) ([]models.Order, error)
-	GetItemByID(ctx context.Context, orderId string) (models.Order, error)
+	GetOrderByID(ctx context.Context, orderId string) (models.Order, error)
 	UpdateOrdeItemrByID(ctx context.Context, orderItems models.OrderItems) error
-	DeleteItemByID(ctx context.Context, orderId string) error
+	DeleteOrderByID(ctx context.Context, orderId string) error
 	checkIngregients(tx *sql.Tx, orderItems []models.OrderItems) error
 	minusInventory(tx *sql.Tx, orderItems []models.OrderItems) error
 }
@@ -124,7 +124,7 @@ func (r *orderRepo) Orders(ctx context.Context) ([]models.Order, error) {
 	return orders, nil
 }
 
-func (r *orderRepo) GetItemByID(ctx context.Context, orderId string) (models.Order, error) {
+func (r *orderRepo) GetOrderByID(ctx context.Context, orderId string) (models.Order, error) {
 	var order models.Order
 	err := r.db.QueryRowContext(ctx, `SELECT * FROM orders WHERE order_id = $1`, orderId).Scan(&order.OrderId, &order.CustomerId, pq.Array(&order.OrderItems), &order.SpecialInstructions, &order.TotalPrice, &order.OrderStatus, &order.PaymentMethod, &order.CreatedAt, &order.UpdatedAt)
 	if err != nil {
@@ -169,7 +169,7 @@ func (r *orderRepo) UpdateOrdeItemrByID(ctx context.Context, orderItems models.O
 	return nil
 }
 
-func (r *orderRepo) DeleteItemByID(ctx context.Context, orderId string) error {
+func (r *orderRepo) DeleteOrderByID(ctx context.Context, orderId string) error {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err

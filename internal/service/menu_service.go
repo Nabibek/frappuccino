@@ -3,10 +3,9 @@ package service
 import (
 	"context"
 	"fmt"
-	"log"
-
 	"frappuccino/internal/repo"
 	"frappuccino/models"
+	"log"
 )
 
 type MenuService interface {
@@ -38,7 +37,7 @@ func (s *menuService) Create(ctx context.Context, item models.MenuItems) (models
 
 func (s *menuService) GetAll(ctx context.Context) ([]models.MenuItems, error) {
 	log.Println("Fetching all menu items")
-	menu, err := s.menuRepo.GetAll(ctx)
+	menu, err := s.menuRepo.Get(ctx)
 	if err != nil {
 		log.Printf("Failed to fetch menu items: %v", err)
 		return nil, fmt.Errorf("could not retrieve menu: %w", err)
