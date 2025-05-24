@@ -2,18 +2,17 @@ package handlers
 
 import (
 	"encoding/json"
-	"log"
-	"net/http"
-
 	"frappuccino/internal/service"
 	"frappuccino/models"
+	"log"
+	"net/http"
 )
 
 type MenuHandler struct {
-	menuService service.MenuService
+	menuService service.MenuServiceInf
 }
 
-func NewMenuHandler(service service.MenuService) *MenuHandler {
+func NewMenuHandler(service service.MenuServiceInf) *MenuHandler {
 	return &MenuHandler{menuService: service}
 }
 
@@ -26,14 +25,13 @@ func (h *MenuHandler) CreateMenuItem(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	log.Printf("input %v", input)
 
-	item, err := h.menuService.Create(r.Context(), input)
+	err := h.menuService.Create(r.Context(), &input)
 	if err != nil {
 		log.Printf("failed to create ingredient: %v", err) // <- вот здесь логируем ошибку
 		http.Error(w, "failed to create ingredient", http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(item)
 }
 
 func (h *MenuHandler) GetAllMenu(w http.ResponseWriter, r *http.Request) {
@@ -71,7 +69,7 @@ func (h *MenuHandler) UpdateMenuItem(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	err := h.menuService.UpdateItemByID(r.Context(), input)
+	err := h.menuService.UpdateItemByID(r.Context(), &input)
 	if err != nil {
 		http.Error(w, "failed to update Item: "+err.Error(), http.StatusInternalServerError)
 		return

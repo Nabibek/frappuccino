@@ -2,18 +2,17 @@ package handlers
 
 import (
 	"encoding/json"
-	"log"
-	"net/http"
-
 	"frappuccino/internal/service"
 	"frappuccino/models"
+	"log"
+	"net/http"
 )
 
 type CustomerHandler struct {
-	customerService service.CustomerService
+	customerService service.CustomerServiceInf
 }
 
-func NewCustomerHandler(service service.CustomerService) *CustomerHandler {
+func NewCustomerHandler(service service.CustomerServiceInf) *CustomerHandler {
 	return &CustomerHandler{customerService: service}
 }
 
@@ -26,14 +25,13 @@ func (h *CustomerHandler) CreateCustomerItem(w http.ResponseWriter, r *http.Requ
 	defer r.Body.Close()
 	log.Printf("input %v", input)
 
-	item, err := h.customerService.Create(r.Context(), input)
+	err := h.customerService.Create(r.Context(), &input)
 	if err != nil {
 		log.Printf("failed to create Customer: %v", err) // <- вот здесь логируем ошибку
 		http.Error(w, "failed to create Customer", http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(item)
 }
 
 func (h *CustomerHandler) GetAllMenu(w http.ResponseWriter, r *http.Request) {
@@ -71,7 +69,7 @@ func (h *CustomerHandler) UpdateMenuItem(w http.ResponseWriter, r *http.Request)
 	}
 	defer r.Body.Close()
 
-	err := h.customerService.UpdateItemByID(r.Context(), input)
+	err := h.customerService.UpdateItemByID(r.Context(), &input)
 	if err != nil {
 		http.Error(w, "failed to update customer: "+err.Error(), http.StatusInternalServerError)
 		return

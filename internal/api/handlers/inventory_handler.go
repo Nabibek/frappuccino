@@ -2,18 +2,17 @@ package handlers
 
 import (
 	"encoding/json"
-	"log"
-	"net/http"
-
 	"frappuccino/internal/service"
 	"frappuccino/models"
+	"log"
+	"net/http"
 )
 
 type InventoryHandler struct {
-	inventoryService service.InventoryService // было invenrotyService
+	inventoryService service.InventoryServiceInf // было invenrotyService
 }
 
-func NewInventoryHandler(service service.InventoryService) *InventoryHandler {
+func NewInventoryHandler(service service.InventoryServiceInf) *InventoryHandler {
 	return &InventoryHandler{inventoryService: service}
 }
 
@@ -26,14 +25,13 @@ func (h *InventoryHandler) CreateInventoryIngredient(w http.ResponseWriter, r *h
 	defer r.Body.Close()
 	log.Printf("input %v", input)
 
-	item, err := h.inventoryService.Create(r.Context(), input)
+	err := h.inventoryService.Create(r.Context(), &input)
 	if err != nil {
 		log.Printf("failed to create ingredient: %v", err) // <- вот здесь логируем ошибку
 		http.Error(w, "failed to create ingredient", http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(item)
 }
 
 func (h *InventoryHandler) GetInventory(w http.ResponseWriter, r *http.Request) {
@@ -71,7 +69,7 @@ func (h *InventoryHandler) UpdateIngredient(w http.ResponseWriter, r *http.Reque
 	}
 	defer r.Body.Close()
 
-	err := h.inventoryService.UpdateIngredientByID(r.Context(), input)
+	err := h.inventoryService.UpdateIngredientByID(r.Context(), &input)
 	if err != nil {
 		http.Error(w, "failed to update ingredient: "+err.Error(), http.StatusInternalServerError)
 		return

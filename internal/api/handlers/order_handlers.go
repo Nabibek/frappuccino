@@ -9,10 +9,10 @@ import (
 )
 
 type OrderHandler struct {
-	orderServise service.OrderServise
+	orderServise service.OrderServiseInf
 }
 
-func NewOrderHandler(service service.OrderServise) *OrderHandler {
+func NewOrderHandler(service service.OrderServiseInf) *OrderHandler {
 	return &OrderHandler{orderServise: service}
 }
 
@@ -24,14 +24,13 @@ func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 	log.Println("input %v", input)
-	order, err := h.orderServise.Create(r.Context(), input)
+	err := h.orderServise.Create(r.Context(), &input)
 	if err != nil {
 		log.Printf("failed to create ingredient: %v", err) // <- вот здесь логируем ошибку
 		http.Error(w, "failed to create ingredient", http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(order)
 }
 
 func (h *OrderHandler) Orders(w http.ResponseWriter, r *http.Request) {
@@ -52,7 +51,7 @@ func (h *OrderHandler) UpdateOrdeItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer r.Body.Close()
-	err := h.orderServise.UpdateOrdeItemrByID(r.Context(), input)
+	err := h.orderServise.UpdateOrdeItemrByID(r.Context(), &input)
 	if err != nil {
 		http.Error(w, "failed to update order Item: "+err.Error(), http.StatusInternalServerError)
 		return
