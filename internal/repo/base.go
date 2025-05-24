@@ -3,9 +3,17 @@ package repo
 import "database/sql"
 
 type Repository struct {
-	db *sql.DB
+	CustomerRepo  CustomerRepo
+	InventoryRepo InventoryRepo
+	MenuRepo      MenuRepo
+	OrderRepo     OrderRepo
 }
 
-func NewRepository(db *sql.DB) *Repository {
-	return &Repository{db: db}
+func New(db *sql.DB) *Repository {
+	return &Repository{
+		CustomerRepo:  NewCustomerRepository(db),
+		InventoryRepo: NewInventoryRepository(db),
+		MenuRepo:      NewMenuRepository(db),
+		OrderRepo:     NewOrderRepository(db),
+	}
 }

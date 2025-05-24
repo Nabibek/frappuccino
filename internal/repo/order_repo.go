@@ -12,48 +12,48 @@ import (
 )
 
 type OrderRepo interface {
-	Create(ctx context.Context, order models.Order) (models.Order, error)
+	Create(ctx context.Context, order *models.Order) error
 	Orders(ctx context.Context) ([]models.Order, error)
 	GetOrderByID(ctx context.Context, orderId string) (models.Order, error)
-	UpdateOrdeItemrByID(ctx context.Context, orderItems models.OrderItems) error
+	UpdateOrdeItemrByID(ctx context.Context, orderItems *models.OrderItems) error
 	DeleteOrderByID(ctx context.Context, orderId string) error
 	checkIngregients(tx *sql.Tx, orderItems []models.OrderItems) error
 	minusInventory(tx *sql.Tx, orderItems []models.OrderItems) error
 }
 
-type orderRepo struct {
-	*Repository
+type OrderRepository struct {
+	db *sql.DB
 }
 
-func NewOrderRepository(db *sql.DB) OrderRepo {
-	return &orderRepo{NewRepository(db)}
+func NewOrderRepository(db *sql.DB) *OrderRepository {
+	return &OrderRepository{db: db}
 }
 
-func (r *orderRepo) Create(ctx context.Context, order models.Order) (models.Order, error) {
+func (r *OrderRepository) Create(ctx context.Context, order *models.Order) error {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
-		return models.Order{}, fmt.Errorf("failed to begin transaction: %w", err)
+		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
 	defer tx.Rollback()
 	// check inventory
 	err = r.checkIngregients(tx, order.OrderItems)
 	if err != nil {
-		return models.Order{}, err
+		return err
 	}
 	err = r.db.QueryRowContext(ctx,
 		`INSERT INTO orders (customer_id,special_instructions,order_payment_method)
-		VALUES ($1,$2,$3,)
-		RETURNING order_id,created_at,updated_at;`, order.CustomerId, order.SpecialInstructions, order.PaymentMethod).Scan(order.OrderId, order.CreatedAt, order.UpdatedAt)
+		VALUES ($1,$2,$3)
+		RETURNING order_id,created_at,updated_at;`, order.CustomerId, order.SpecialInstructions, order.PaymentMethod).Scan(&order.OrderId, &order.CreatedAt, &order.UpdatedAt)
 	if err != nil {
-		return models.Order{}, err
+		return err
 	}
 
 	var totalPrice utils.DEC
 
 	for _, items := range order.OrderItems {
-		err = r.db.QueryRow(`SELECT mi.price FROM menu_items mi WHERE menu_item_id = $1`, items.MenuItemId).Scan(items.UnitPrice)
+		err = tx.QueryRow(`SELECT mi.price FROM menu_items mi WHERE menu_item_id = $1`, items.MenuItemId).Scan(&items.UnitPrice)
 		if err != nil {
-			return models.Order{}, err
+			return err
 		}
 
 		totalPrice += items.Quantity * items.UnitPrice // add unit_price from menu Items
@@ -63,10 +63,10 @@ func (r *orderRepo) Create(ctx context.Context, order models.Order) (models.Orde
 
 	order.OrderStatus = "pending"
 
-	return order, tx.Commit()
+	return tx.Commit()
 }
 
-func (r *orderRepo) checkIngregients(tx *sql.Tx, orderItems []models.OrderItems) error {
+func (r *OrderRepository) checkIngregients(tx *sql.Tx, orderItems []models.OrderItems) error {
 	query1 := `
 	SELECT i.quantity>= mii.quantity * $1
 	FROM inventory i
@@ -85,7 +85,7 @@ func (r *orderRepo) checkIngregients(tx *sql.Tx, orderItems []models.OrderItems)
 	return nil
 }
 
-func (r *orderRepo) minusInventory(tx *sql.Tx, orderItems []models.OrderItems) error {
+func (r *OrderRepository) minusInventory(tx *sql.Tx, orderItems []models.OrderItems) error {
 	for _, item := range orderItems {
 		_, err := tx.Exec(`
             WITH ingredients AS (
@@ -106,7 +106,7 @@ func (r *orderRepo) minusInventory(tx *sql.Tx, orderItems []models.OrderItems) e
 	return nil
 }
 
-func (r *orderRepo) Orders(ctx context.Context) ([]models.Order, error) {
+func (r *OrderRepository) Orders(ctx context.Context) ([]models.Order, error) {
 	rows, err := r.db.QueryContext(ctx, `SELECT * FROM orders`)
 	if err != nil {
 		return []models.Order{}, err
@@ -124,7 +124,7 @@ func (r *orderRepo) Orders(ctx context.Context) ([]models.Order, error) {
 	return orders, nil
 }
 
-func (r *orderRepo) GetOrderByID(ctx context.Context, orderId string) (models.Order, error) {
+func (r *OrderRepository) GetOrderByID(ctx context.Context, orderId string) (models.Order, error) {
 	var order models.Order
 	err := r.db.QueryRowContext(ctx, `SELECT * FROM orders WHERE order_id = $1`, orderId).Scan(&order.OrderId, &order.CustomerId, pq.Array(&order.OrderItems), &order.SpecialInstructions, &order.TotalPrice, &order.OrderStatus, &order.PaymentMethod, &order.CreatedAt, &order.UpdatedAt)
 	if err != nil {
@@ -136,7 +136,7 @@ func (r *orderRepo) GetOrderByID(ctx context.Context, orderId string) (models.Or
 	return order, nil
 }
 
-func (r *orderRepo) UpdateOrdeItemrByID(ctx context.Context, orderItems models.OrderItems) error {
+func (r *OrderRepository) UpdateOrdeItemrByID(ctx context.Context, orderItems *models.OrderItems) error {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -169,7 +169,7 @@ func (r *orderRepo) UpdateOrdeItemrByID(ctx context.Context, orderItems models.O
 	return nil
 }
 
-func (r *orderRepo) DeleteOrderByID(ctx context.Context, orderId string) error {
+func (r *OrderRepository) DeleteOrderByID(ctx context.Context, orderId string) error {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err

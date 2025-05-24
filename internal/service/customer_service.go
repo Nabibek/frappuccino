@@ -3,39 +3,39 @@ package service
 import (
 	"context"
 	"fmt"
-	"log"
-
 	"frappuccino/internal/repo"
 	"frappuccino/models"
+	"log"
 )
 
-type CustomerService interface {
-	Create(ctx context.Context, customer models.Customer) (models.Customer, error)
+type CustomerServiceInf interface {
+	Create(ctx context.Context, customer *models.Customer) error
 	GetAll(ctx context.Context) ([]models.Customer, error)
 	GetItemByID(ctx context.Context, CustomerId string) (models.Customer, error)
-	UpdateItemByID(ctx context.Context, customer models.Customer) error
+	UpdateItemByID(ctx context.Context, customer *models.Customer) error
 	DeleteItemByID(ctx context.Context, CustomerId string) error
 }
-type customerService struct {
+
+type CustomerService struct {
 	customerRepo repo.CustomerRepo
 }
 
-func NewCustomerService(customerRepo repo.CustomerRepo) CustomerService {
-	return &customerService{customerRepo: customerRepo}
+func NewCustomerService(customerRepo repo.CustomerRepo) *CustomerService {
+	return &CustomerService{customerRepo: customerRepo}
 }
 
-func (s *customerService) Create(ctx context.Context, customer models.Customer) (models.Customer, error) {
+func (s *CustomerService) Create(ctx context.Context, customer *models.Customer) error {
 	log.Println("Creating new Customer item:", customer.FullName)
-	created, err := s.customerRepo.Create(ctx, customer)
+	err := s.customerRepo.Create(ctx, customer)
 	if err != nil {
 		log.Printf("Failed to create menu customer '%s': %v", customer.FullName, err)
-		return models.Customer{}, fmt.Errorf("could not create menu customer: %w", err)
+		return fmt.Errorf("could not create menu customer: %w", err)
 	}
-	log.Println("Customer item created successfully:", created.CustomerId)
-	return created, nil
+	log.Println("Customer item created successfully:", customer.CustomerId)
+	return nil
 }
 
-func (s *customerService) GetAll(ctx context.Context) ([]models.Customer, error) {
+func (s *CustomerService) GetAll(ctx context.Context) ([]models.Customer, error) {
 	log.Println("Fetching all menu items")
 	menu, err := s.customerRepo.GetAll(ctx)
 	if err != nil {
@@ -46,7 +46,7 @@ func (s *customerService) GetAll(ctx context.Context) ([]models.Customer, error)
 	return menu, nil
 }
 
-func (s *customerService) GetItemByID(ctx context.Context, CustomerId string) (models.Customer, error) {
+func (s *CustomerService) GetItemByID(ctx context.Context, CustomerId string) (models.Customer, error) {
 	log.Printf("Fetching menu item by ID: %s", CustomerId)
 	customer, err := s.customerRepo.GetItemByID(ctx, CustomerId)
 	if err != nil {
@@ -57,7 +57,7 @@ func (s *customerService) GetItemByID(ctx context.Context, CustomerId string) (m
 	return customer, nil
 }
 
-func (s *customerService) UpdateItemByID(ctx context.Context, customer models.Customer) error {
+func (s *CustomerService) UpdateItemByID(ctx context.Context, customer *models.Customer) error {
 	log.Printf("Updating menu item [%s]", customer.CustomerId)
 	err := s.customerRepo.UpdateItemByID(ctx, customer)
 	if err != nil {
@@ -68,7 +68,7 @@ func (s *customerService) UpdateItemByID(ctx context.Context, customer models.Cu
 	return nil
 }
 
-func (s *customerService) DeleteItemByID(ctx context.Context, CustomerId string) error {
+func (s *CustomerService) DeleteItemByID(ctx context.Context, CustomerId string) error {
 	log.Printf("Deleting menu item [%s]", CustomerId)
 	err := s.customerRepo.DeleteItemByID(ctx, CustomerId)
 	if err != nil {

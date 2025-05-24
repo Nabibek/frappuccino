@@ -5,38 +5,37 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-
 	"frappuccino/models"
 )
 
 type CustomerRepo interface {
-	Create(ctx context.Context, customer models.Customer) (models.Customer, error)
+	Create(ctx context.Context, customer *models.Customer) error
 	GetAll(ctx context.Context) ([]models.Customer, error)
 	GetItemByID(ctx context.Context, CustomerId string) (models.Customer, error)
-	UpdateItemByID(ctx context.Context, customer models.Customer) error
+	UpdateItemByID(ctx context.Context, customer *models.Customer) error
 	DeleteItemByID(ctx context.Context, CustomerId string) error
 }
 
-type customerRepo struct {
-	*Repository
+type CustomerRepository struct {
+	db *sql.DB
 }
 
-func NewCustomerRepository(db *sql.DB) CustomerRepo {
-	return &customerRepo{NewRepository(db)}
+func NewCustomerRepository(db *sql.DB) *CustomerRepository {
+	return &CustomerRepository{db: db}
 }
 
-func (r *customerRepo) Create(ctx context.Context, customer models.Customer) (models.Customer, error) {
+func (r *CustomerRepository) Create(ctx context.Context, customer *models.Customer) error {
 	err := r.db.QueryRowContext(ctx,
 		`INSERT INTO customers (full_name,phone_number,email,preferences)
 	     VALUES ($1,$2,$3,$4)
 		 RETURNING customer_id,created_at,updated_at`, customer.FullName, customer.PhoneNumber, customer.Email, customer.Preferences).Scan(&customer.CustomerId, &customer.CreatedAt, &customer.UpdatedAt)
 	if err != nil {
-		return models.Customer{}, fmt.Errorf("failed to create Customer: %w", err)
+		return fmt.Errorf("failed to create Customer: %w", err)
 	}
-	return customer, nil
+	return nil
 }
 
-func (r *customerRepo) GetAll(ctx context.Context) ([]models.Customer, error) {
+func (r *CustomerRepository) GetAll(ctx context.Context) ([]models.Customer, error) {
 	rows, err := r.db.QueryContext(ctx, `
 		SELECT * FROM customers`)
 	if err != nil {
@@ -55,7 +54,7 @@ func (r *customerRepo) GetAll(ctx context.Context) ([]models.Customer, error) {
 	return customers, nil
 }
 
-func (r *customerRepo) GetItemByID(ctx context.Context, CustomerId string) (models.Customer, error) {
+func (r *CustomerRepository) GetItemByID(ctx context.Context, CustomerId string) (models.Customer, error) {
 	var customer models.Customer
 	err := r.db.QueryRowContext(ctx, `
 		SELECT * FROM customers WHERE customer_id = $1`, CustomerId).Scan(&customer.CustomerId, &customer.FullName, &customer.PhoneNumber, &customer.Email, &customer.Preferences, &customer.CreatedAt, &customer.UpdatedAt)
@@ -68,7 +67,7 @@ func (r *customerRepo) GetItemByID(ctx context.Context, CustomerId string) (mode
 	return customer, nil
 }
 
-func (r *customerRepo) UpdateItemByID(ctx context.Context, customer models.Customer) error {
+func (r *CustomerRepository) UpdateItemByID(ctx context.Context, customer *models.Customer) error {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
@@ -103,7 +102,7 @@ func (r *customerRepo) UpdateItemByID(ctx context.Context, customer models.Custo
 	return nil
 }
 
-func (r *customerRepo) DeleteItemByID(ctx context.Context, CustomerId string) error {
+func (r *CustomerRepository) DeleteItemByID(ctx context.Context, CustomerId string) error {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)

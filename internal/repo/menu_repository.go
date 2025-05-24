@@ -11,33 +11,33 @@ import (
 )
 
 type MenuRepo interface {
-	Create(ctx context.Context, item models.MenuItems) (models.MenuItems, error)
+	Create(ctx context.Context, item *models.MenuItems) error
 	Get(ctx context.Context) ([]models.MenuItems, error)
 	GetItemByID(ctx context.Context, MenuItemId string) (models.MenuItems, error)
-	UpdateItemByID(ctx context.Context, item models.MenuItems) error
+	UpdateItemByID(ctx context.Context, item *models.MenuItems) error
 	DeleteItemByID(ctx context.Context, MenuItemId string) error
 }
 
-type menuRepo struct {
-	*Repository
+type MenuRepository struct {
+	db *sql.DB
 }
 
-func NewMenuRepository(db *sql.DB) MenuRepo {
-	return &menuRepo{NewRepository(db)}
+func NewMenuRepository(db *sql.DB) *MenuRepository {
+	return &MenuRepository{db: db}
 }
 
-func (r *menuRepo) Create(ctx context.Context, item models.MenuItems) (models.MenuItems, error) {
+func (r *MenuRepository) Create(ctx context.Context, item *models.MenuItems) error {
 	err := r.db.QueryRowContext(ctx,
 		`INSERT INTO menu_item (item_name,item_description,price,categories)
 	     VALUES ($1,$2,$3,$4)
 		 RETURNING menu_item_id,created_at,updated_at`, item.ItemName, item.ItemDescription, item.Price, pq.Array(item.Categories)).Scan(&item.MenuItemId, &item.CreatedAt, &item.UpdatedAt)
 	if err != nil {
-		return models.MenuItems{}, fmt.Errorf("failed to create menu item: %w", err)
+		return fmt.Errorf("failed to create menu item: %w", err)
 	}
-	return item, nil
+	return nil
 }
 
-func (r *menuRepo) Get(ctx context.Context) ([]models.MenuItems, error) {
+func (r *MenuRepository) Get(ctx context.Context) ([]models.MenuItems, error) {
 	rows, err := r.db.QueryContext(ctx, `
 		SELECT * FROM menu_item`)
 	if err != nil {
@@ -56,7 +56,7 @@ func (r *menuRepo) Get(ctx context.Context) ([]models.MenuItems, error) {
 	return menu, nil
 }
 
-func (r *menuRepo) GetItemByID(ctx context.Context, MenuItemId string) (models.MenuItems, error) {
+func (r *MenuRepository) GetItemByID(ctx context.Context, MenuItemId string) (models.MenuItems, error) {
 	var item models.MenuItems
 	err := r.db.QueryRowContext(ctx, `
 		SELECT * FROM menu_item WHERE menu_item_id = $1`, MenuItemId).Scan(&item.MenuItemId, &item.ItemName, &item.ItemDescription, &item.Price, pq.Array(&item.Categories), &item.CreatedAt, &item.UpdatedAt)
@@ -69,7 +69,7 @@ func (r *menuRepo) GetItemByID(ctx context.Context, MenuItemId string) (models.M
 	return item, nil
 }
 
-func (r *menuRepo) UpdateItemByID(ctx context.Context, item models.MenuItems) error {
+func (r *MenuRepository) UpdateItemByID(ctx context.Context, item *models.MenuItems) error {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
@@ -104,7 +104,7 @@ func (r *menuRepo) UpdateItemByID(ctx context.Context, item models.MenuItems) er
 	return nil
 }
 
-func (r *menuRepo) DeleteItemByID(ctx context.Context, MenuItemId string) error {
+func (r *MenuRepository) DeleteItemByID(ctx context.Context, MenuItemId string) error {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)

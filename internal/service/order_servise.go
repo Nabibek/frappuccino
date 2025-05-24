@@ -7,34 +7,34 @@ import (
 	"log"
 )
 
-type OrderServise interface {
-	Create(ctx context.Context, order models.Order) (models.Order, error)
+type OrderServiseInf interface {
+	Create(ctx context.Context, order *models.Order) error
 	Orders(ctx context.Context) ([]models.Order, error)
 	GetOrderByID(ctx context.Context, orderId string) (models.Order, error)
-	UpdateOrdeItemrByID(ctx context.Context, orderItems models.OrderItems) error
+	UpdateOrdeItemrByID(ctx context.Context, orderItems *models.OrderItems) error
 	DeleteOrderByID(ctx context.Context, orderId string) error
 }
 
-type orderServise struct {
+type OrderServise struct {
 	orderRepo repo.OrderRepo
 }
 
-func NewOrderService(orderRepo repo.OrderRepo) OrderServise {
-	return &orderServise{orderRepo: orderRepo}
+func NewOrderService(orderRepo repo.OrderRepo) *OrderServise {
+	return &OrderServise{orderRepo: orderRepo}
 }
 
-func (s *orderServise) Create(ctx context.Context, order models.Order) (models.Order, error) {
+func (s *OrderServise) Create(ctx context.Context, order *models.Order) error {
 	log.Println("Create new order", order.OrderId)
-	created, err := s.orderRepo.Create(ctx, order)
+	err := s.orderRepo.Create(ctx, order)
 	if err != nil {
 		log.Println("Failed to create order")
-		return models.Order{}, err
+		return err
 	}
-	log.Println("Order created successfully", created.OrderId)
-	return created, nil
+	log.Println("Order created successfully", order.OrderId)
+	return nil
 }
 
-func (s *orderServise) Orders(ctx context.Context) ([]models.Order, error) {
+func (s *OrderServise) Orders(ctx context.Context) ([]models.Order, error) {
 	log.Println("Get orders ")
 	orders, err := s.Orders(ctx)
 	if err != nil {
@@ -45,7 +45,7 @@ func (s *orderServise) Orders(ctx context.Context) ([]models.Order, error) {
 	return orders, nil
 }
 
-func (s *orderServise) GetOrderByID(ctx context.Context, orderId string) (models.Order, error) {
+func (s *OrderServise) GetOrderByID(ctx context.Context, orderId string) (models.Order, error) {
 	log.Println("Get order BY id")
 	order, err := s.GetOrderByID(ctx, orderId)
 	if err != nil {
@@ -56,7 +56,7 @@ func (s *orderServise) GetOrderByID(ctx context.Context, orderId string) (models
 	return order, nil
 }
 
-func (s *orderServise) UpdateOrdeItemrByID(ctx context.Context, orderItems models.OrderItems) error {
+func (s *OrderServise) UpdateOrdeItemrByID(ctx context.Context, orderItems *models.OrderItems) error {
 	log.Println("updateing order items")
 	err := s.UpdateOrdeItemrByID(ctx, orderItems)
 	if err != nil {
@@ -67,7 +67,7 @@ func (s *orderServise) UpdateOrdeItemrByID(ctx context.Context, orderItems model
 	return nil
 }
 
-func (s *orderServise) DeleteOrderByID(ctx context.Context, orderId string) error {
+func (s *OrderServise) DeleteOrderByID(ctx context.Context, orderId string) error {
 	log.Println("Deleting order")
 	err := s.DeleteOrderByID(ctx, orderId)
 	if err != nil {

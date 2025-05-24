@@ -12,7 +12,7 @@ RUN go mod download
 COPY . .
 
 # Собираем бинарный файл
-RUN go build -o frappuccino ./cmd/main.go
+RUN go build -o frappuccino ./cmd/app/main.go
 
 # Используем минимальный образ для финального контейнера
 FROM debian:bookworm-slim
