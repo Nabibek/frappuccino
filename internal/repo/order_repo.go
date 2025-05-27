@@ -61,7 +61,7 @@ func (r *OrderRepository) Create(ctx context.Context, order *models.Order) error
 	order.TotalPrice = totalPrice
 	err = r.minusInventory(tx, order.OrderItems)
 
-	order.OrderStatus = "pending"
+	order.OrderStatus = "PENDING"
 
 	return tx.Commit()
 }
