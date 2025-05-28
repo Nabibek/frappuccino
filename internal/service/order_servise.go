@@ -13,6 +13,7 @@ type OrderServiseInf interface {
 	GetOrderByID(ctx context.Context, orderId string) (models.Order, error)
 	UpdateOrdeItemrByID(ctx context.Context, orderItems *models.OrderItems) error
 	DeleteOrderByID(ctx context.Context, orderId string) error
+	UpdateStatusOrder(ctx context.Context, orderId string, status string) error
 }
 
 type OrderServise struct {
@@ -72,6 +73,15 @@ func (s *OrderServise) DeleteOrderByID(ctx context.Context, orderId string) erro
 	err := s.DeleteOrderByID(ctx, orderId)
 	if err != nil {
 		log.Println("Failed to delete order")
+		return err
+	}
+	return nil
+}
+func (s *OrderServise) UpdateStatusOrder(ctx context.Context, orderId string, status string) error {
+	log.Println("Updateing Order")
+
+	err := s.UpdateStatusOrder(ctx, orderId, status)
+	if err != nil {
 		return err
 	}
 	return nil

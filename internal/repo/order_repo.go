@@ -19,6 +19,7 @@ type OrderRepo interface {
 	DeleteOrderByID(ctx context.Context, orderId string) error
 	checkIngregients(tx *sql.Tx, orderItems []models.OrderItems) error
 	minusInventory(tx *sql.Tx, orderItems []models.OrderItems) error
+	UpdateStatusOrder(ctx context.Context, orderId string, status string) error
 }
 
 type OrderRepository struct {
@@ -194,5 +195,35 @@ func (r *OrderRepository) DeleteOrderByID(ctx context.Context, orderId string) e
 		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
+	return nil
+}
+func (r *OrderRepository) UpdateStatusOrder(ctx context.Context, orderId string, status string) error {
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	res, err := tx.ExecContext(ctx, `
+	UPDATE TABLE order
+	SET order_status = $2
+	WHERE order_id = $1
+	`, orderId, status)
+	if err != nil {
+		return fmt.Errorf("failed to Update status: %w", err)
+	}
+
+	// Verify exactly one row was deleted
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to check rows affected: %w", err)
+	}
+	if rowsAffected == 0 {
+		return sql.ErrNoRows
+	}
+
+	// Commit transaction if everything succeeded
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
 	return nil
 }

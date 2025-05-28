@@ -92,3 +92,22 @@ func (h *OrderHandler) GetOrderByID(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(order)
 }
+func (h *OrderHandler) UpdateStatusOrder(w http.ResponseWriter, r *http.Request) {
+	idStr := r.URL.Query().Get("id") // FIX
+	status := r.URL.Query().Get("status")
+	if status != "CANCELLED" || status != "PENDING" || status != "COMPLETED" {
+		http.Error(w, "incorrect status", http.StatusBadRequest)
+		return
+	}
+	if idStr == "" {
+		http.Error(w, "missing id", http.StatusBadRequest)
+		return
+	}
+	err := h.orderServise.UpdateStatusOrder(r.Context(), idStr, status)
+	if err != nil {
+		http.Error(w, "Can not update status", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"message":"Order status updated successfully"}`))
+}
