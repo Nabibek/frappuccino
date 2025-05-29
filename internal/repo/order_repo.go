@@ -17,9 +17,10 @@ type OrderRepo interface {
 	GetOrderByID(ctx context.Context, orderId string) (models.Order, error)
 	UpdateOrdeItemrByID(ctx context.Context, orderItems *models.OrderItems) error
 	DeleteOrderByID(ctx context.Context, orderId string) error
+	UpdateStatusOrder(ctx context.Context, orderId string, status string) error
+	NumberOfOrderItems(ctx context.Context) error // need to add
 	checkIngregients(tx *sql.Tx, orderItems []models.OrderItems) error
 	minusInventory(tx *sql.Tx, orderItems []models.OrderItems) error
-	UpdateStatusOrder(ctx context.Context, orderId string, status string) error
 }
 
 type OrderRepository struct {
@@ -226,4 +227,9 @@ func (r *OrderRepository) UpdateStatusOrder(ctx context.Context, orderId string,
 		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
 	return nil
+}
+
+func (r *OrderRepository) NumberOfOrderItems(ctx context.Context) error {
+	var err error
+	return err
 }
