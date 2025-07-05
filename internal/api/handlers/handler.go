@@ -3,10 +3,11 @@ package handlers
 import "frappuccino/internal/service"
 
 type Handler struct {
-	CustomerHandler  *CustomerHandler
-	InventoryHandler *InventoryHandler
-	MenuHandler      *MenuHandler
-	OrderHandler     *OrderHandler
+	CustomerHandler    *CustomerHandler
+	InventoryHandler   *InventoryHandler
+	MenuHandler        *MenuHandler
+	OrderHandler       *OrderHandler
+	AggregationHandler *AggregationHandler
 }
 
 func New(service *service.Service) *Handler {
