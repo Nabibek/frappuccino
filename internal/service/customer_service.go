@@ -11,9 +11,9 @@ import (
 type CustomerServiceInf interface {
 	Create(ctx context.Context, customer *models.Customer) error
 	GetAll(ctx context.Context) ([]models.Customer, error)
-	GetItemByID(ctx context.Context, CustomerId string) (models.Customer, error)
-	UpdateItemByID(ctx context.Context, customer *models.Customer) error
-	DeleteItemByID(ctx context.Context, CustomerId string) error
+	GetCustomerByID(ctx context.Context, CustomerId string) (models.Customer, error)
+	UpdateCustomerByID(ctx context.Context, customer *models.Customer) error
+	DeleteCustomerByID(ctx context.Context, CustomerId string) error
 }
 
 type CustomerService struct {
@@ -25,56 +25,56 @@ func NewCustomerService(customerRepo repo.CustomerRepo) *CustomerService {
 }
 
 func (s *CustomerService) Create(ctx context.Context, customer *models.Customer) error {
-	log.Println("Creating new Customer item:", customer.FullName)
+	log.Println("Creating new Customer :", customer.FullName)
 	err := s.customerRepo.Create(ctx, customer)
 	if err != nil {
 		log.Printf("Failed to create menu customer '%s': %v", customer.FullName, err)
 		return fmt.Errorf("could not create menu customer: %w", err)
 	}
-	log.Println("Customer item created successfully:", customer.CustomerId)
+	log.Println("Customer  created successfully:", customer.CustomerId)
 	return nil
 }
 
 func (s *CustomerService) GetAll(ctx context.Context) ([]models.Customer, error) {
-	log.Println("Fetching all menu items")
-	menu, err := s.customerRepo.GetAll(ctx)
+	log.Println("Fetching all Customers")
+	customers, err := s.customerRepo.GetAll(ctx)
 	if err != nil {
-		log.Printf("Failed to fetch menu items: %v", err)
+		log.Printf("Failed to fetch Customer: %v", err)
 		return nil, fmt.Errorf("could not retrieve menu: %w", err)
 	}
-	log.Printf("Retrieved %d menu items", len(menu))
-	return menu, nil
+	log.Printf("Retrieved %d customer", len(customers))
+	return customers, nil
 }
 
-func (s *CustomerService) GetItemByID(ctx context.Context, CustomerId string) (models.Customer, error) {
-	log.Printf("Fetching menu item by ID: %s", CustomerId)
-	customer, err := s.customerRepo.GetItemByID(ctx, CustomerId)
+func (s *CustomerService) GetCustomerByID(ctx context.Context, CustomerId string) (models.Customer, error) {
+	log.Printf("Fetching customer by ID: %s", CustomerId)
+	customer, err := s.customerRepo.GetCustomerByID(ctx, CustomerId)
 	if err != nil {
-		log.Printf("Failed to fetch menu item [%s]: %v", CustomerId, err)
-		return models.Customer{}, fmt.Errorf("could not get menu item: %w", err)
+		log.Printf("Failed to fetch customer [%s]: %v", CustomerId, err)
+		return models.Customer{}, fmt.Errorf("could not get customer: %w", err)
 	}
-	log.Printf("Retrieved menu item [%s]: %s", customer.CustomerId, customer.FullName)
+	log.Printf("Retrieved customer [%s]: %s", customer.CustomerId, customer.FullName)
 	return customer, nil
 }
 
-func (s *CustomerService) UpdateItemByID(ctx context.Context, customer *models.Customer) error {
-	log.Printf("Updating menu item [%s]", customer.CustomerId)
-	err := s.customerRepo.UpdateItemByID(ctx, customer)
+func (s *CustomerService) UpdateCustomerByID(ctx context.Context, customer *models.Customer) error {
+	log.Printf("Updating  Customer [%s]", customer.CustomerId)
+	err := s.customerRepo.UpdateCustomerByID(ctx, customer)
 	if err != nil {
-		log.Printf("Failed to update menu item [%s]: %v", customer.CustomerId, err)
-		return fmt.Errorf("could not update menu item: %w", err)
+		log.Printf("Failed to update  Customer [%s]: %v", customer.CustomerId, err)
+		return fmt.Errorf("could not update  Customer: %w", err)
 	}
-	log.Printf("Menu item [%s] updated successfully", customer.CustomerId)
+	log.Printf("Customer [%s] updated successfully", customer.CustomerId)
 	return nil
 }
 
-func (s *CustomerService) DeleteItemByID(ctx context.Context, CustomerId string) error {
-	log.Printf("Deleting menu item [%s]", CustomerId)
-	err := s.customerRepo.DeleteItemByID(ctx, CustomerId)
+func (s *CustomerService) DeleteCustomerByID(ctx context.Context, CustomerId string) error {
+	log.Printf("Deleting  Customer [%s]", CustomerId)
+	err := s.customerRepo.DeleteCustomerByID(ctx, CustomerId)
 	if err != nil {
-		log.Printf("Failed to delete menu item [%s]: %v", CustomerId, err)
-		return fmt.Errorf("could not delete menu item: %w", err)
+		log.Printf("Failed to  Customer [%s]: %v", CustomerId, err)
+		return fmt.Errorf("could not delete  Customer: %w", err)
 	}
-	log.Printf("Menu item [%s] deleted successfully", CustomerId)
+	log.Printf("Customer [%s] deleted successfully", CustomerId)
 	return nil
 }

@@ -44,14 +44,14 @@ func (h *OrderHandler) Orders(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(orders)
 }
 
-func (h *OrderHandler) UpdateOrdeItem(w http.ResponseWriter, r *http.Request) {
+func (h *OrderHandler) UpdateOrderItem(w http.ResponseWriter, r *http.Request) {
 	var input models.OrderItems
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		http.Error(w, "Invalid input", http.StatusBadRequest)
 		return
 	}
 	defer r.Body.Close()
-	err := h.orderServise.UpdateOrdeItemrByID(r.Context(), &input)
+	err := h.orderServise.UpdateOrderItemByID(r.Context(), &input)
 	if err != nil {
 		http.Error(w, "failed to update order Item: "+err.Error(), http.StatusInternalServerError)
 		return

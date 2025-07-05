@@ -16,7 +16,7 @@ func NewCustomerHandler(service service.CustomerServiceInf) *CustomerHandler {
 	return &CustomerHandler{customerService: service}
 }
 
-func (h *CustomerHandler) CreateCustomerItem(w http.ResponseWriter, r *http.Request) {
+func (h *CustomerHandler) CreateCustomer(w http.ResponseWriter, r *http.Request) {
 	var input models.Customer
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		http.Error(w, "Invalid input", http.StatusBadRequest)
@@ -34,7 +34,7 @@ func (h *CustomerHandler) CreateCustomerItem(w http.ResponseWriter, r *http.Requ
 	w.WriteHeader(http.StatusCreated)
 }
 
-func (h *CustomerHandler) GetAllMenu(w http.ResponseWriter, r *http.Request) {
+func (h *CustomerHandler) GetAllCustomers(w http.ResponseWriter, r *http.Request) {
 	customer, err := h.customerService.GetAll(r.Context())
 	if err != nil {
 		http.Error(w, "failed to get Customers", http.StatusInternalServerError)
@@ -44,16 +44,16 @@ func (h *CustomerHandler) GetAllMenu(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(customer)
 }
 
-func (h *CustomerHandler) GetIngredientByID(w http.ResponseWriter, r *http.Request) {
+func (h *CustomerHandler) GetCustomerByID(w http.ResponseWriter, r *http.Request) {
 	idStr := r.URL.Query().Get("id") // FIX
 	if idStr == "" {
 		http.Error(w, "missing id", http.StatusBadRequest)
 		return
 	}
 
-	customer, err := h.customerService.GetItemByID(r.Context(), idStr)
+	customer, err := h.customerService.GetCustomerByID(r.Context(), idStr)
 	if err != nil {
-		http.Error(w, "Item not found", http.StatusNotFound)
+		http.Error(w, "Customer not found", http.StatusNotFound)
 		return
 	}
 
@@ -61,7 +61,7 @@ func (h *CustomerHandler) GetIngredientByID(w http.ResponseWriter, r *http.Reque
 	json.NewEncoder(w).Encode(customer)
 }
 
-func (h *CustomerHandler) UpdateMenuItem(w http.ResponseWriter, r *http.Request) {
+func (h *CustomerHandler) UpdateCustomer(w http.ResponseWriter, r *http.Request) {
 	var input models.Customer
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		http.Error(w, "Invalid input", http.StatusBadRequest)
@@ -69,7 +69,7 @@ func (h *CustomerHandler) UpdateMenuItem(w http.ResponseWriter, r *http.Request)
 	}
 	defer r.Body.Close()
 
-	err := h.customerService.UpdateItemByID(r.Context(), &input)
+	err := h.customerService.UpdateCustomerByID(r.Context(), &input)
 	if err != nil {
 		http.Error(w, "failed to update customer: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -79,14 +79,14 @@ func (h *CustomerHandler) UpdateMenuItem(w http.ResponseWriter, r *http.Request)
 	w.Write([]byte(`{"message":"Customer updated successfully"}`))
 }
 
-func (h *CustomerHandler) DeleteMenuItem(w http.ResponseWriter, r *http.Request) {
+func (h *CustomerHandler) DeleteCustomer(w http.ResponseWriter, r *http.Request) {
 	idStr := r.URL.Query().Get("id") // FIX
 	if idStr == "" {
 		http.Error(w, "missing id", http.StatusBadRequest)
 		return
 	}
 
-	err := h.customerService.DeleteItemByID(r.Context(), idStr)
+	err := h.customerService.DeleteCustomerByID(r.Context(), idStr)
 	if err != nil {
 		http.Error(w, "failed to delete customer: "+err.Error(), http.StatusInternalServerError)
 		return

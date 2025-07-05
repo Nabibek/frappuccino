@@ -11,7 +11,7 @@ type OrderServiseInf interface {
 	Create(ctx context.Context, order *models.Order) error
 	Orders(ctx context.Context) ([]models.Order, error)
 	GetOrderByID(ctx context.Context, orderId string) (models.Order, error)
-	UpdateOrdeItemrByID(ctx context.Context, orderItems *models.OrderItems) error
+	UpdateOrderItemByID(ctx context.Context, orderItems *models.OrderItems) error
 	DeleteOrderByID(ctx context.Context, orderId string) error
 	UpdateStatusOrder(ctx context.Context, orderId string, status string) error
 }
@@ -57,9 +57,9 @@ func (s *OrderServise) GetOrderByID(ctx context.Context, orderId string) (models
 	return order, nil
 }
 
-func (s *OrderServise) UpdateOrdeItemrByID(ctx context.Context, orderItems *models.OrderItems) error {
+func (s *OrderServise) UpdateOrderItemByID(ctx context.Context, orderItems *models.OrderItems) error {
 	log.Println("updateing order items")
-	err := s.UpdateOrdeItemrByID(ctx, orderItems)
+	err := s.UpdateOrderItemByID(ctx, orderItems)
 	if err != nil {
 		log.Println("Failed update order item ")
 		return err

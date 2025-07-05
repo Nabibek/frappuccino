@@ -15,7 +15,7 @@ type OrderRepo interface {
 	Create(ctx context.Context, order *models.Order) error
 	Orders(ctx context.Context) ([]models.Order, error)
 	GetOrderByID(ctx context.Context, orderId string) (models.Order, error)
-	UpdateOrdeItemrByID(ctx context.Context, orderItems *models.OrderItems) error
+	UpdateOrderItemByID(ctx context.Context, orderItems *models.OrderItems) error
 	DeleteOrderByID(ctx context.Context, orderId string) error
 	UpdateStatusOrder(ctx context.Context, orderId string, status string) error
 	NumberOfOrderItems(ctx context.Context) error // need to add
@@ -138,7 +138,7 @@ func (r *OrderRepository) GetOrderByID(ctx context.Context, orderId string) (mod
 	return order, nil
 }
 
-func (r *OrderRepository) UpdateOrdeItemrByID(ctx context.Context, orderItems *models.OrderItems) error {
+func (r *OrderRepository) UpdateOrderItemByID(ctx context.Context, orderItems *models.OrderItems) error {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err

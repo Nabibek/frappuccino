@@ -11,9 +11,9 @@ import (
 type CustomerRepo interface {
 	Create(ctx context.Context, customer *models.Customer) error
 	GetAll(ctx context.Context) ([]models.Customer, error)
-	GetItemByID(ctx context.Context, CustomerId string) (models.Customer, error)
-	UpdateItemByID(ctx context.Context, customer *models.Customer) error
-	DeleteItemByID(ctx context.Context, CustomerId string) error
+	GetCustomerByID(ctx context.Context, CustomerId string) (models.Customer, error)
+	UpdateCustomerByID(ctx context.Context, customer *models.Customer) error
+	DeleteCustomerByID(ctx context.Context, CustomerId string) error
 }
 
 type CustomerRepository struct {
@@ -54,7 +54,7 @@ func (r *CustomerRepository) GetAll(ctx context.Context) ([]models.Customer, err
 	return customers, nil
 }
 
-func (r *CustomerRepository) GetItemByID(ctx context.Context, CustomerId string) (models.Customer, error) {
+func (r *CustomerRepository) GetCustomerByID(ctx context.Context, CustomerId string) (models.Customer, error) {
 	var customer models.Customer
 	err := r.db.QueryRowContext(ctx, `
 		SELECT * FROM customers WHERE customer_id = $1`, CustomerId).Scan(&customer.CustomerId, &customer.FullName, &customer.PhoneNumber, &customer.Email, &customer.Preferences, &customer.CreatedAt, &customer.UpdatedAt)
@@ -67,7 +67,7 @@ func (r *CustomerRepository) GetItemByID(ctx context.Context, CustomerId string)
 	return customer, nil
 }
 
-func (r *CustomerRepository) UpdateItemByID(ctx context.Context, customer *models.Customer) error {
+func (r *CustomerRepository) UpdateCustomerByID(ctx context.Context, customer *models.Customer) error {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
@@ -102,7 +102,7 @@ func (r *CustomerRepository) UpdateItemByID(ctx context.Context, customer *model
 	return nil
 }
 
-func (r *CustomerRepository) DeleteItemByID(ctx context.Context, CustomerId string) error {
+func (r *CustomerRepository) DeleteCustomerByID(ctx context.Context, CustomerId string) error {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
